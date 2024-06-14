@@ -1,43 +1,28 @@
-import {Router} from "express";
+import {Router, json} from "express";
 import AuthService from '../services/auth-service.js';
 import jwt from "jsonwebtoken";
 
+const app = express();
+const port = 3000;
+const secretKey = 'mysecretkey';
 
 const router = Router();
 const svc = new AuthService();
 
 router.post('/login', async (req, res) => {
-    let response;
-    const entity = req.body;
+    const { username, password } = req.body;
 
-    const returnValue = await svc.loginAsync(entity);
- 
-    if (returnValue != null) {
-
-        const secretKey = 'mysecretkey';
-
-        const options = {
-            expiresIn: '1h',
-            issuer: 'dai-eventos'
-        }
-
-        const token = jwt.sign(returnValue, secretKey, options);
-        console.log(token)
-
-        response = res.status(200).json({
-            success: true,
-            message: 'Usuario o clave inválida.',
-            "token": token
-        });
+    if (username === 'usuario' && password === 'contraseña') {
+      const payload = { username: 'usuario' };
+      const token = jwt.sign(payload, secretKey, { expiresIn: '1h' });
+  
+      res.json({ token });
     } else {
-        response = res.status(401).json({
-            success: false,
-            message: 'Usuario o clave inválida.',
-            "token": ""
-        });
+      res.status(401).json({ error: 'Credenciales incorrectas' });
     }
-    return response;
-});
+  });
+    
+
 
 router.post('/register', async (req, res) => {
     let response;
@@ -57,5 +42,27 @@ router.post('/register', async (req, res) => {
 
     return response;
 });
-
+router.listen(port, () => {
+    console.log(`Servidor escuchando en el puerto ${port}`);
+  });
+// Rutas protegidas
+router.get('/protected', validateToken, (req, res) => {
+    res.send('Esta es una ruta protegida');
+  });
+  
+  router.get('/another-protected', validateToken, (req, res) => {
+    res.send(`Hola, ${req.user.username}. Esta es otra ruta protegida.`);
+  });
+  //const handleProtectedRequest = async () => {
+    //const token = localStorage.getItem('token');
+    //const response = await fetch('http://localhost:3000/protected', {
+      //method: 'GET',
+      //headers: {
+       // 'Authorization': `Bearer ${token}`,
+      //},
+    //});
+  
+ //   const data = await response.text();
+   // setMessage(data);
+ // };
   export default router;
