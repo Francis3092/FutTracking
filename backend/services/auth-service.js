@@ -1,15 +1,19 @@
-import AuthRepository from "../repositories/auth-repository.js";
+// auth-service.js
+import supabase from "../supabaseClient.js";
 
-export default class AuthService {
-    loginAsync = async (entity) => {
-        const repo = new AuthRepository();
-        const returnArray = await repo.loginAsync(entity);
-        return returnArray;
+class AuthService {
+  async loginAsync(email, password) {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email,
+      password: password,
+    });
+
+    if (error) {
+      return { error: error.message };
     }
 
-    registerAsync = async (entity) => {
-        const repo = new AuthRepository();
-        const returnArray = await repo.registerAsync(entity);
-        return returnArray;
-    }
+    return { user: data.user, error: null };
+  }
 }
+
+export default AuthService;

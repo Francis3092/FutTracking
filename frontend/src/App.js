@@ -1,20 +1,19 @@
-import logo from './logo.svg';
-import './App.css';
-import Header from './Components/Header';
-import Main from './Components/Main';
-import Footer from './Components/Footer';
+// src/App.js
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import Login from './Components/Login';
+import Home from './Components/Home'; // Asumiendo que tienes un componente Home para la pantalla principal
 
 function App() {
   return (
-    <div className="container">
-      <Header />
-      <main className="main-content">
-        <Main />
-      </main>
-      <footer className="footer">
-        <Footer />
-      </footer>
-    </div>
+    <Router>
+      <div>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+        </Routes>
+      </div>
+    </Router>
   );
 }
 
