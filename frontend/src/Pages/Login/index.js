@@ -35,7 +35,7 @@ const Login = () => {
             setError(result.error.message);
         } else {
             setError(null);
-            navigate('/home');
+            // No need to navigate manually, as Supabase will handle the redirection
         }
     }
 
