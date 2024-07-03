@@ -121,3 +121,55 @@
     height: 20px;
     margin-right: 5px;
 }
+
+.share-menu {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    height: 40%;
+    width: 100%;
+    max-width: 460px; /* Optional: set a max-width for the menu */
+    background:#000;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
+.share-icons {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    width: 90%;
+    height: 100px;
+}
+
+.share-icon {
+    color: white;
+    font-size: 40px;
+    margin: 0 20px;
+    cursor: pointer;
+}
+
+.share-icon.whatsapp:hover {
+    color: #25D366;
+}
+
+.share-icon.facebook:hover {
+    color: #4267B2;
+}
+
+.share-icon.twitter:hover {
+    color: #1DA1F2;
+}
+
+.share-icon.instagram:hover {
+    color: #C13584;
+}
+
+.share-icon.download:hover {
+    color: #FFD700;
+}
