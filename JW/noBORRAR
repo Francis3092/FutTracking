@@ -1,0 +1,81 @@
+                                                            // auth-controller.js
+// import express from 'express';
+// import AuthService from '../services/auth-service.js';
+// import jwt from 'jsonwebtoken';
+// const router = express.Router();
+// import validateToken from '../middleware/auth-middleware.js';
+// const secretKey = 'mysecretkey';
+// const svc = new AuthService();
+
+// router.post('/login', validateToken,async (req, res) => {
+//   const { email, password } = req.body;
+
+//   const { user, error } = await svc.loginAsync(email, password);
+//   if (error) {
+//     res.status(401).json({ error: 'Credenciales incorrectas' });
+//   } else {
+//     const token = jwt.sign({ id: user.id, email: user.email }, secretKey, { expiresIn: '1h' });
+//     res.json({ token });
+//   }
+// });
+
+// export default router;
+
+
+
+
+
+
+                                                                // // auth-middleware.js
+// import jwt from 'jsonwebtoken';
+// const secretKey = 'mysecretkey';
+
+// const validateToken = (req, res, next) => {
+//   const token = req.headers.authorization?.split(' ')[1];
+//   if (!token) {
+//     return res.status(401).json({ error: 'No se proporcionó un token de autenticación' });
+//   }
+
+//   try {
+//     const decoded = jwt.verify(token, secretKey);
+//     req.user = decoded;
+//     next();
+//   } catch (error) {
+//     return res.status(401).json({ error: 'Token inválido' });
+//   }
+// };
+
+
+// export default {
+//   validateToken,
+// };
+
+                                                                    // // Authrepository
+// import DBConfig from "../config/db-config.js";
+// import pkg from 'pg';
+// import jwt from "jsonwebtoken";
+// const { Client } = pkg;
+// const secretKey = 'mysecretkey';
+
+// export default class AuthRepository {
+//   loginAsync = async (entity) => {
+//     let returnArray = null;
+//     const client = new Client(DBConfig);
+//     try {
+//       await client.connect();
+//       const sql = 'SELECT * FROM users WHERE username = $1 AND password = $2';
+//       const values = [entity.username, entity.password];
+//       const result = await client.query(sql, values);
+//       await client.end();
+//       if (result.rows.length > 0) {
+//         const payload = { id: result.rows[0].id, username: result.rows[0].username };
+//         const token = jwt.sign(payload, secretKey, { expiresIn: '1h' });
+//         returnArray = { success: true, message: '', token: token };
+//       }
+//     } catch (error) {
+//       console.log(error);
+//     }
+//     return returnArray;
+//   }
+  
+// }
