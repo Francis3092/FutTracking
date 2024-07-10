@@ -25,6 +25,15 @@
     font-size: 18px;
 }
 
+.back-link {
+    color: white;
+    text-decoration: none;
+}
+
+.back-link:hover {
+    color: white;
+}
+
 .logo {
     width: 80px;
 }

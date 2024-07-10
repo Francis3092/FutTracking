@@ -29,19 +29,20 @@ export const signInWithMagicLink = async (email) => {
 }
 
 export const signInWithGoogle = async () => {
-  try {
-      const { error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-              redirectTo: window.location.origin + '/home'
-          }
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin + '/home'
+        }
       });
       if (error) throw error;
-  } catch (error) {
+      return { data };
+    } catch (error) {
       console.error('Error during Google sign-in', error);
       return { error };
+    }
   }
-}
 
 export const logout = async () => {
     const result = await supabase.auth.signOut()

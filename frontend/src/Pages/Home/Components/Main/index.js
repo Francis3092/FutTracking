@@ -5,16 +5,22 @@ import { FaRegEnvelope } from "react-icons/fa6";
 import { getVideoData, getVideoLikes, getVideoComments } from '../../../../Configs/supabaseClient';
 
 const Main = () => {
-    const [isPlaying, setIsPlaying] = useState(true);
+    const [isPlaying, setIsPlaying] = useState(false);
     const [showShareMenu, setShowShareMenu] = useState(false);
+    const [showCommentMenu, setShowCommentMenu] = useState(false);
     const [videoData, setVideoData] = useState(null);
     const [likes, setLikes] = useState([]);
     const [comments, setComments] = useState([]);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
     const [isDragging, setIsDragging] = useState(false);
+    const [newComment, setNewComment] = useState("");
+    const [lastClickTime, setLastClickTime] = useState(0);
+    const [liked, setLiked] = useState(false);
+
     const videoRef = useRef();
     const shareMenuRef = useRef();
+    const commentMenuRef = useRef();
     const progressBarRef = useRef();
 
     useEffect(() => {
@@ -26,9 +32,6 @@ const Main = () => {
                 setLikes(videoLikes);
                 const videoComments = await getVideoComments(video.id);
                 setComments(videoComments);
-                if (videoRef.current) {
-                    videoRef.current.play();
-                }
             } else {
                 console.error("No se pudo obtener los datos del video.");
             }
@@ -38,13 +41,31 @@ const Main = () => {
     }, []);
 
     useEffect(() => {
+        if (videoData && videoRef.current) {
+            const playVideo = async () => {
+                try {
+                    await videoRef.current.play();
+                    setIsPlaying(true);
+                } catch (e) {
+                    console.error("Error al reproducir:", e);
+                    setIsPlaying(false);
+                }
+            };
+            playVideo();
+        }
+    }, [videoData]);
+
+    useEffect(() => {
         const handleClickOutside = (event) => {
             if (shareMenuRef.current && !shareMenuRef.current.contains(event.target)) {
                 setShowShareMenu(false);
             }
+            if (commentMenuRef.current && !commentMenuRef.current.contains(event.target)) {
+                setShowCommentMenu(false);
+            }
         };
 
-        if (showShareMenu) {
+        if (showShareMenu || showCommentMenu) {
             document.addEventListener("mousedown", handleClickOutside);
         } else {
             document.removeEventListener("mousedown", handleClickOutside);
@@ -53,24 +74,30 @@ const Main = () => {
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
-    }, [showShareMenu]);
+    }, [showShareMenu, showCommentMenu]);
 
     const handlePlayPause = () => {
-        setIsPlaying(!isPlaying);
-        if (!isPlaying) {
-            videoRef.current.play();
-        } else {
-            videoRef.current.pause();
+        if (videoRef.current) {
+            if (isPlaying) {
+                videoRef.current.pause();
+            } else {
+                videoRef.current.play().catch(e => console.error("Error al reproducir:", e));
+            }
+            setIsPlaying(!isPlaying);
         }
     };
 
     const handleScreenClick = (e) => {
-        e.stopPropagation();
-        handlePlayPause();
+        const currentTime = new Date().getTime();
+        if (currentTime - lastClickTime < 300) {
+            handleDoubleClick(e);
+        } else {
+            handlePlayPause();
+        }
+        setLastClickTime(currentTime);
     };
 
     const handleDoubleClick = (e) => {
-        e.stopPropagation();
         const newTime = videoRef.current.currentTime + 10;
         videoRef.current.currentTime = newTime < videoRef.current.duration ? newTime : videoRef.current.duration;
     };
@@ -80,14 +107,33 @@ const Main = () => {
         setShowShareMenu(!showShareMenu);
     };
 
+    const handleCommentClick = (e) => {
+        e.stopPropagation();
+        setShowCommentMenu(!showCommentMenu);
+    };
+
+    const handleLikeClick = () => {
+        setLiked(!liked);
+    };
+
+    const handleCloseShareMenu = () => {
+        setShowShareMenu(false);
+    };
+
+    const handleCloseCommentMenu = () => {
+        setShowCommentMenu(false);
+    };
+
     const handleDownload = () => {
-        const link = document.createElement('a');
-        link.href = videoData.url;
-        link.setAttribute('download', 'video.mp4');
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        if (videoData && videoData.url) {
+            const link = document.createElement('a');
+            link.href = videoData.url;
+            link.setAttribute('download', 'video.mp4');
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
     };
 
     const handleTimeUpdate = () => {
@@ -116,6 +162,22 @@ const Main = () => {
         setIsDragging(false);
     };
 
+    const handlePostComment = () => {
+        if (newComment.trim()) {
+            setComments([...comments, { user: 'Tú', text: newComment, replies: [] }]);
+            setNewComment("");
+        }
+    };
+
+    const handleReplyClick = (index) => {
+        const replyText = prompt('Escribí tu respuesta:');
+        if (replyText && replyText.trim()) {
+            const updatedComments = [...comments];
+            updatedComments[index].replies.push({ user: 'Tú', text: replyText });
+            setComments(updatedComments);
+        }
+    };
+
     const formatTime = (time) => {
         const minutes = Math.floor(time / 60);
         const seconds = Math.floor(time % 60);
@@ -124,8 +186,17 @@ const Main = () => {
 
     return (
         <div className="image-container">
-            <video ref={videoRef} src={videoData ? videoData.url : ''} className="player-img" autoPlay loop controls={false} onTimeUpdate={handleTimeUpdate}></video>
-            <div className="player-info" onClick={handleScreenClick} onDoubleClick={handleDoubleClick}>
+            <video 
+                ref={videoRef}
+                src={videoData ? videoData.url : ''}
+                className="player-img"
+                playsInline
+                loop
+                onClick={handleScreenClick}
+                onTimeUpdate={handleTimeUpdate}
+                onLoadedMetadata={() => videoRef.current.play().catch(e => console.error("Error al cargar metadata:", e))}
+            />
+            <div className="player-info">
                 <div className="controls-wrapper">
                     <button className="pause-button" onClick={handlePlayPause}>
                         {isPlaying ? <FaPause /> : <FaPlay />}
@@ -135,11 +206,11 @@ const Main = () => {
                         onMouseDown={handleMouseDown}
                         onMouseMove={handleMouseMove}
                         onMouseUp={handleMouseUp}>
-                        <span>{formatTime(currentTime)}</span>
+                        <span className="time">{formatTime(currentTime)}</span>
                         <div className="progress-bar">
                             <div className="progress" style={{ width: `${(currentTime / duration) * 100}%` }}></div>
                         </div>
-                        <span>{formatTime(duration - currentTime)}</span>
+                        <span className="time">{formatTime(duration - currentTime)}</span>
                     </div>
                 </div>
                 <div className="user-info">
@@ -151,11 +222,11 @@ const Main = () => {
                     <button className="follow-button">Siguiendo</button>
                 </div>
                 <div className="stats">
-                    <div className="stat">
-                        <FaHeart className='stat-icon' />
-                        <span>{likes.length}</span>
+                    <div className="stat" onClick={handleLikeClick} style={{ cursor: 'pointer' }}>
+                        <FaHeart className={`stat-icon ${liked ? 'liked' : ''}`} />
+                        <span>{liked ? likes.length + 1 : likes.length}</span>
                     </div>
-                    <div className="stat">
+                    <div className="stat" onClick={handleCommentClick} style={{ cursor: 'pointer' }}>
                         <FaComment className='stat-icon' />
                         <span>{comments.length}</span>
                     </div>
@@ -163,9 +234,9 @@ const Main = () => {
                         <FaEye className='stat-icon' />
                         <span>61.3K</span>
                     </div>
-                    <div className="stat">
-                        <FaShareAlt className='stat-icon' onClick={handleShareClick} /> 
-                        <span>Share</span>
+                    <div className="stat" onClick={handleShareClick} style={{ cursor: 'pointer' }}>
+                        <FaShareAlt className='stat-icon' />
+                        <span>Compartir</span>
                     </div>
                 </div>
             </div>
@@ -195,7 +266,7 @@ const Main = () => {
                         </div>
                     </div>
                     <div className="share-icons">
-                        <div className="share-icon-container" onClick={handleDownload}>
+                        <div className="share-icon-container">
                             <div className="share-icon">
                                 <FaLink />
                             </div>
@@ -208,7 +279,49 @@ const Main = () => {
                             <span>Guardar</span>
                         </div>
                     </div>
-                    <button className="cancel-button">Cancelar</button>
+                    <button className="cancel-button" onClick={handleCloseShareMenu}>Cancelar</button>
+                </div>
+            )}
+            {showCommentMenu && (
+                <div className="comment-menu" ref={commentMenuRef} onClick={(e) => e.stopPropagation()}>
+                    <p className="comment-title">Comentarios</p>
+                    <div className="comment-section">
+                        {comments.map((comment, index) => (
+                            <div key={index} className="comment">
+                                <div className="comment-user-info">
+                                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTjDM0PhKJ_GdWFpZd6zUh3lENRBqkScnZ4Cg&s" alt="User Profile" className="comment-user-profile-img" />
+                                    <div className="comment-user-details">
+                                        <p className="comment-user-name">{comment.user}</p>
+                                    </div>
+                                </div>
+                                <p className="comment-text">{comment.text}</p>
+                                <button className="reply-button" onClick={() => handleReplyClick(index)}>Responder</button>
+                                {comment.replies && comment.replies.map((reply, replyIndex) => (
+                                    <div key={replyIndex} className="comment reply">
+                                        <div className="comment-user-info">
+                                            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTjDM0PhKJ_GdWFpZd6zUh3lENRBqkScnZ4Cg&s" alt="User Profile" className="comment-user-profile-img" />
+                                            <div className="comment-user-details">
+                                                <p className="comment-user-name">{reply.user}</p>
+                                            </div>
+                                        </div>
+                                        <p className="comment-text">{reply.text}</p>
+                                    </div>
+                                ))}
+                                <hr className="comment-divider" />
+                            </div>
+                        ))}
+                    </div>
+                    <div className="comment-input-wrapper">
+                        <input 
+                            type="text" 
+                            className="comment-input" 
+                            value={newComment} 
+                            onChange={(e) => setNewComment(e.target.value)} 
+                            placeholder="Escribí tu respuesta"
+                        />
+                        <button className="comment-send-button" onClick={handlePostComment}>Enviar</button>
+                    </div>
+                    <button className="cancel-button" onClick={handleCloseCommentMenu}>Cancelar</button>
                 </div>
             )}
         </div>

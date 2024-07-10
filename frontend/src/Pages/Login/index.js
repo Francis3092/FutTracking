@@ -29,15 +29,16 @@ const Login = () => {
     }
 
     const handleLoginGoogle = async () => {
-        const result = await signInWithGoogle();
-
-        if (result.error) {
-            setError(result.error.message);
-        } else {
-            setError(null);
-            // No need to navigate manually, as Supabase will handle the redirection
+        setError(null); // Clear any previous errors
+        try {
+          const { data, error } = await signInWithGoogle();
+          if (error) throw error;
+          // The redirection will be handled by Supabase, so we don't need to navigate manually
+        } catch (error) {
+          console.error('Error during Google sign-in:', error);
+          setError("An error occurred during Google sign-in. Please try again.");
         }
-    }
+      }
 
     return (
         <div>

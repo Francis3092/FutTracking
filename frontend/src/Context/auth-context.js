@@ -7,10 +7,18 @@ export const AuthContext = createContext({
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [authError, setAuthError] = useState(null);
 
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
+      if (event === 'SIGNED_IN') {
+        setUser(session?.user ?? null);
+        setAuthError(null);
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+      } else if (event === 'USER_UPDATED') {
+        setUser(session?.user ?? null);
+      }
     });
 
     return () => {
@@ -19,7 +27,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user }}>
+    <AuthContext.Provider value={{ user, authError }}>
       {children}
     </AuthContext.Provider>
   );

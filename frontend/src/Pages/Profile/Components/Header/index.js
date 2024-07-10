@@ -8,11 +8,11 @@ const Header = () => {
     return (
         <header className="profile-header">
           <button className="back-button">
-            <Link to="/home"><FaChevronLeft /></Link>
+            <Link to="/home" className="back-link"><FaChevronLeft /></Link>
           </button>
           <img src={logo} alt="Logo" className="logo" />
         </header>
-      );
+    );
 };
 
 export default Header;
