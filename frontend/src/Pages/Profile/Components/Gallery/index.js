@@ -1,29 +1,39 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import supabase from "../../../../Configs/supabaseClient"; // Asegúrate de tener esta configuración
 import "./index.css";
 
 const Gallery = () => {
+    const [videos, setVideos] = useState([]);
+
+    useEffect(() => {
+        const fetchVideos = async () => {
+            const { data, error } = await supabase
+                .from('videos')
+                .select('*')
+                .eq('usuarioid', 11);
+            if (error) {
+                console.error("Error fetching videos:", error);
+            } else {
+                setVideos(data);
+            }
+        };
+        fetchVideos();
+    }, []);
+
     return (
-      <div className="gallery">
-        <div className="gallery-item">
-          <img src="https://e00-especiales-marca.uecdn.es/futbol/images/top-100/grandes/vinicius.jpg" alt="Post Image 1" className="gallery-img" />
+        <div className="gallery">
+            {videos.map(video => (
+                <div className="gallery-item" key={video.id}>
+                    <iframe
+                        src={video.url}
+                        className="gallery-img"
+                        title={video.titulo}
+                        allowFullScreen
+                    ></iframe>
+                </div>
+            ))}
         </div>
-        <div className="gallery-item">
-          <img src="https://e00-especiales-marca.uecdn.es/futbol/images/top-100/grandes/vinicius.jpg" alt="Post Image 2" className="gallery-img" />
-        </div>
-        <div className="gallery-item">
-          <img src="https://e00-especiales-marca.uecdn.es/futbol/images/top-100/grandes/vinicius.jpg" alt="Post Image 3" className="gallery-img" />
-        </div>
-        <div className="gallery-item">
-          <img src="https://e00-especiales-marca.uecdn.es/futbol/images/top-100/grandes/vinicius.jpg" alt="Post Image 4" className="gallery-img" />
-        </div>
-        <div className="gallery-item">
-          <img src="https://e00-especiales-marca.uecdn.es/futbol/images/top-100/grandes/vinicius.jpg" alt="Post Image 5" className="gallery-img" />
-        </div>
-        <div className="gallery-item">
-          <img src="https://e00-especiales-marca.uecdn.es/futbol/images/top-100/grandes/vinicius.jpg" alt="Post Image 6" className="gallery-img" />
-        </div>
-      </div>
     );
-  }
-  
-  export default Gallery;
+}
+
+export default Gallery;

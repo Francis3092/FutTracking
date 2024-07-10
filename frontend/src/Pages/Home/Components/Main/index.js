@@ -1,17 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './index.css';
-import { FaPlay, FaHeart, FaComment, FaEye, FaShareAlt, FaGripLinesVertical, FaDownload, FaLink, FaArrowLeft } from "react-icons/fa";
+import { FaPlay, FaPause, FaHeart, FaComment, FaEye, FaShareAlt, FaDownload, FaLink } from "react-icons/fa";
 import { FaRegEnvelope } from "react-icons/fa6";
 import { getVideoData, getVideoLikes, getVideoComments } from '../../../../Configs/supabaseClient';
 
 const Main = () => {
     const [isPlaying, setIsPlaying] = useState(true);
-    const [showPlayButton, setShowPlayButton] = useState(false);
     const [showShareMenu, setShowShareMenu] = useState(false);
     const [videoData, setVideoData] = useState(null);
     const [likes, setLikes] = useState([]);
     const [comments, setComments] = useState([]);
-    const [isFullscreen, setIsFullscreen] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
     const [isDragging, setIsDragging] = useState(false);
@@ -63,22 +61,18 @@ const Main = () => {
             videoRef.current.play();
         } else {
             videoRef.current.pause();
-            setShowPlayButton(true);
         }
     };
 
-    const handleScreenClick = () => {
-        if (isFullscreen) {
-            handlePlayPause();
-        } else {
-            setIsFullscreen(true);
-        }
-        setShowPlayButton(false);
-    };
-
-    const handleExitFullscreen = (e) => {
+    const handleScreenClick = (e) => {
         e.stopPropagation();
-        setIsFullscreen(false);
+        handlePlayPause();
+    };
+
+    const handleDoubleClick = (e) => {
+        e.stopPropagation();
+        const newTime = videoRef.current.currentTime + 10;
+        videoRef.current.currentTime = newTime < videoRef.current.duration ? newTime : videoRef.current.duration;
     };
 
     const handleShareClick = (e) => {
@@ -129,64 +123,52 @@ const Main = () => {
     };
 
     return (
-        <div className="image-container" onClick={handleScreenClick}>
-            {isFullscreen && (
-                <button className="exit-fullscreen-button" onClick={handleExitFullscreen}>
-                    <FaArrowLeft />
-                </button>
-            )}
-            <video ref={videoRef} src={videoData ? videoData.url : ''} className={`player-img ${isFullscreen ? 'fullscreen-video' : ''}`} autoPlay loop controls={false} onTimeUpdate={handleTimeUpdate}></video>
-            {showPlayButton && (
-                <button className="play-button" onClick={handlePlayPause}>
-                    {!isPlaying ? <FaPlay className='play-icon' /> : <FaGripLinesVertical className='play-icon' />}
-                </button>
-            )}
-            {isFullscreen && (
-                <div className="time-bar"
-                    ref={progressBarRef}
-                    onMouseDown={handleMouseDown}
-                    onMouseMove={handleMouseMove}
-                    onMouseUp={handleMouseUp}>
-                    <span>{formatTime(currentTime)}</span>
-                    <div className="progress-bar">
-                        <div className="progress" style={{ width: `${(currentTime / duration) * 100}%` }}></div>
-                    </div>
-                    <span>{formatTime(duration - currentTime)}</span>
-                </div>
-            )}
-            {!isFullscreen && (
-                <div className="overlay"></div>
-            )}
-            {!isFullscreen && (
-                <div className="player-info">
-                    <div className="user-info">
-                        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTjDM0PhKJ_GdWFpZd6zUh3lENRBqkScnZ4Cg&s" alt="Player Profile" className="user-profile-img" />
-                        <div className="user-details">
-                            <p className="user-name">Ruben Botta</p>
-                            <p className="user-location">CABA, Buenos Aires, Argentina</p>
+        <div className="image-container">
+            <video ref={videoRef} src={videoData ? videoData.url : ''} className="player-img" autoPlay loop controls={false} onTimeUpdate={handleTimeUpdate}></video>
+            <div className="player-info" onClick={handleScreenClick} onDoubleClick={handleDoubleClick}>
+                <div className="controls-wrapper">
+                    <button className="pause-button" onClick={handlePlayPause}>
+                        {isPlaying ? <FaPause /> : <FaPlay />}
+                    </button>
+                    <div className="time-bar"
+                        ref={progressBarRef}
+                        onMouseDown={handleMouseDown}
+                        onMouseMove={handleMouseMove}
+                        onMouseUp={handleMouseUp}>
+                        <span>{formatTime(currentTime)}</span>
+                        <div className="progress-bar">
+                            <div className="progress" style={{ width: `${(currentTime / duration) * 100}%` }}></div>
                         </div>
-                        <button className="follow-button">Siguiendo</button>
-                    </div>
-                    <div className="stats">
-                        <div className="stat">
-                            <FaHeart className='stat-icon' />
-                            <span>{likes.length}</span>
-                        </div>
-                        <div className="stat">
-                            <FaComment className='stat-icon' />
-                            <span>{comments.length}</span>
-                        </div>
-                        <div className="stat">
-                            <FaEye className='stat-icon' />
-                            <span>61.3K</span>
-                        </div>
-                        <div className="stat">
-                            <FaShareAlt className='stat-icon' onClick={handleShareClick} /> 
-                            <span>Share</span>
-                        </div>
+                        <span>{formatTime(duration - currentTime)}</span>
                     </div>
                 </div>
-            )}
+                <div className="user-info">
+                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTjDM0PhKJ_GdWFpZd6zUh3lENRBqkScnZ4Cg&s" alt="Player Profile" className="user-profile-img" />
+                    <div className="user-details">
+                        <p className="user-name">Ruben Botta</p>
+                        <p className="user-location">CABA, Buenos Aires, Argentina</p>
+                    </div>
+                    <button className="follow-button">Siguiendo</button>
+                </div>
+                <div className="stats">
+                    <div className="stat">
+                        <FaHeart className='stat-icon' />
+                        <span>{likes.length}</span>
+                    </div>
+                    <div className="stat">
+                        <FaComment className='stat-icon' />
+                        <span>{comments.length}</span>
+                    </div>
+                    <div className="stat">
+                        <FaEye className='stat-icon' />
+                        <span>61.3K</span>
+                    </div>
+                    <div className="stat">
+                        <FaShareAlt className='stat-icon' onClick={handleShareClick} /> 
+                        <span>Share</span>
+                    </div>
+                </div>
+            </div>
             {showShareMenu && (
                 <div className="share-menu" ref={shareMenuRef} onClick={(e) => e.stopPropagation()}>
                     <p className="share-title">Compartir video</p>

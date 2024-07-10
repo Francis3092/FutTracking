@@ -44,3 +44,5 @@ export const getVideoComments = async (videoId) => {
     }
     return data;
 }
+
+export default supabase;
