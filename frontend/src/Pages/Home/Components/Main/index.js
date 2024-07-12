@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './index.css';
-import { FaPlay, FaPause, FaHeart, FaComment, FaEye, FaShareAlt, FaDownload, FaLink } from "react-icons/fa";
+import { FaPlay, FaPause, FaHeart, FaComment, FaEye, FaShareAlt, FaDownload, FaLink, FaChevronDown } from "react-icons/fa";
 import { FaRegEnvelope } from "react-icons/fa6";
 import { getVideoData, getVideoLikes, getVideoComments } from '../../../../Configs/supabaseClient';
 
@@ -17,6 +17,7 @@ const Main = () => {
     const [newComment, setNewComment] = useState("");
     const [lastClickTime, setLastClickTime] = useState(0);
     const [liked, setLiked] = useState(false);
+    const [replyTo, setReplyTo] = useState(null);
 
     const videoRef = useRef();
     const shareMenuRef = useRef();
@@ -164,24 +165,55 @@ const Main = () => {
 
     const handlePostComment = () => {
         if (newComment.trim()) {
-            setComments([...comments, { user: 'Tú', text: newComment, replies: [] }]);
+            if (replyTo !== null) {
+                const updatedComments = [...comments];
+                updatedComments[replyTo].replies.push({ user: 'Tú', text: newComment, timestamp: new Date(), likes: 0 });
+                setComments(updatedComments);
+                setReplyTo(null);
+            } else {
+                setComments([...comments, { user: 'Tú', text: newComment, replies: [], timestamp: new Date(), likes: 0 }]);
+            }
             setNewComment("");
         }
     };
 
     const handleReplyClick = (index) => {
-        const replyText = prompt('Escribí tu respuesta:');
-        if (replyText && replyText.trim()) {
-            const updatedComments = [...comments];
-            updatedComments[index].replies.push({ user: 'Tú', text: replyText });
-            setComments(updatedComments);
+        setReplyTo(index);
+    };
+
+    const toggleReplies = (index) => {
+        const updatedComments = [...comments];
+        updatedComments[index].showReplies = !updatedComments[index].showReplies;
+        setComments(updatedComments);
+    };
+
+    const handleCommentLike = (commentIndex, replyIndex) => {
+        const updatedComments = [...comments];
+        if (replyIndex !== undefined) {
+            const reply = updatedComments[commentIndex].replies[replyIndex];
+            reply.liked = !reply.liked;
+            reply.likes += reply.liked ? 1 : -1;
+        } else {
+            const comment = updatedComments[commentIndex];
+            comment.liked = !comment.liked;
+            comment.likes += comment.liked ? 1 : -1;
         }
+        setComments(updatedComments);
     };
 
     const formatTime = (time) => {
         const minutes = Math.floor(time / 60);
         const seconds = Math.floor(time % 60);
         return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    };
+
+    const formatTimestamp = (timestamp) => {
+        const now = new Date();
+        const diff = Math.floor((now - new Date(timestamp)) / 1000);
+        if (diff < 60) return `${diff} s`;
+        if (diff < 3600) return `${Math.floor(diff / 60)} min`;
+        if (diff < 86400) return `${Math.floor(diff / 3600)} h`;
+        return `${Math.floor(diff / 86400)} d`;
     };
 
     return (
@@ -292,22 +324,47 @@ const Main = () => {
                                     <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTjDM0PhKJ_GdWFpZd6zUh3lENRBqkScnZ4Cg&s" alt="User Profile" className="comment-user-profile-img" />
                                     <div className="comment-user-details">
                                         <p className="comment-user-name">{comment.user}</p>
+                                        <p className="comment-timestamp">{formatTimestamp(comment.timestamp)}</p>
                                     </div>
                                 </div>
                                 <p className="comment-text">{comment.text}</p>
-                                <button className="reply-button" onClick={() => handleReplyClick(index)}>Responder</button>
-                                {comment.replies && comment.replies.map((reply, replyIndex) => (
-                                    <div key={replyIndex} className="comment reply">
-                                        <div className="comment-user-info">
-                                            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTjDM0PhKJ_GdWFpZd6zUh3lENRBqkScnZ4Cg&s" alt="User Profile" className="comment-user-profile-img" />
-                                            <div className="comment-user-details">
-                                                <p className="comment-user-name">{reply.user}</p>
-                                            </div>
-                                        </div>
-                                        <p className="comment-text">{reply.text}</p>
+                                <div className="comment-stats">
+                                    <button className="reply-button" onClick={() => handleReplyClick(index)}>Responder</button>
+                                    <div className="comment-like-icon" onClick={() => handleCommentLike(index)}>
+                                        <FaHeart className={comment.liked ? 'liked' : ''} />
+                                        <span>{comment.likes}</span>
                                     </div>
-                                ))}
-                                <hr className="comment-divider" />
+                                </div>
+                                {comment.replies && comment.replies.length > 0 && (
+                                    <>
+                                        <button className="view-replies-button" onClick={() => toggleReplies(index)}>
+                                            {comment.showReplies ? 'Ocultar respuestas' : `Ver ${comment.replies.length} respuestas`} <FaChevronDown />
+                                        </button>
+                                        {comment.showReplies && (
+                                            <div className="replies">
+                                                {comment.replies.map((reply, replyIndex) => (
+                                                    <div key={replyIndex} className="comment reply">
+                                                        <div className="comment-user-info">
+                                                            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTjDM0PhKJ_GdWFpZd6zUh3lENRBqkScnZ4Cg&s" alt="User Profile" className="comment-user-profile-img" />
+                                                            <div className="comment-user-details">
+                                                                <p className="comment-user-name">{reply.user}</p>
+                                                                <p className="comment-timestamp">{formatTimestamp(reply.timestamp)}</p>
+                                                            </div>
+                                                        </div>
+                                                        <p className="comment-text">{reply.text}</p>
+                                                        <div className="comment-stats">
+                                                            <button className="reply-button" onClick={() => handleReplyClick(index)}>Responder</button>
+                                                            <div className="comment-like-icon" onClick={() => handleCommentLike(index, replyIndex)}>
+                                                                <FaHeart className={reply.liked ? 'liked' : ''} />
+                                                                <span>{reply.likes}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </>
+                                )}
                             </div>
                         ))}
                     </div>
@@ -317,7 +374,7 @@ const Main = () => {
                             className="comment-input" 
                             value={newComment} 
                             onChange={(e) => setNewComment(e.target.value)} 
-                            placeholder="Escribí tu respuesta"
+                            placeholder={replyTo !== null ? "Responde al comentario..." : "Escribí tu respuesta"}
                         />
                         <button className="comment-send-button" onClick={handlePostComment}>Enviar</button>
                     </div>

@@ -34,9 +34,9 @@ export const getVideoLikes = async (videoId) => {
 
 export const getVideoComments = async (videoId) => {
     const { data, error } = await supabase
-        .from('comments')
+        .from('comentarios')
         .select('*')
-        .eq('video_id', videoId);
+        .eq('videoid', videoId);
     
     if (error) {
         console.error("Error obteniendo comentarios del video:", error);
