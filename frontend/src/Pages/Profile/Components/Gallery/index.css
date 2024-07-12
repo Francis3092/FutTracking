@@ -11,16 +11,17 @@
 }
 
 .gallery-img {
-    width: 40%;
+    width: 35%;
     cursor: pointer;
 }
 
 .fullscreen-video {
     position: fixed;
-    top: 0vh; /* Ajusta este valor para mover el video más arriba */
-    left: 615px;
-    width: 26.8vw;
-    height: 97vh; /* Reduce la altura para que quede un poco más arriba */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90vw;
+    height: 90vh;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -31,7 +32,7 @@
 .fullscreen-video-player {
     width: 100%;
     height: 100%;
-    object-fit: cover; /* Cambia a 'cover' para llenar el contenedor */
+    object-fit: cover;
 }
 
 .info-player{
@@ -425,4 +426,3 @@
     margin-left: 5px;
     font-size: 0.8rem;
 }
-

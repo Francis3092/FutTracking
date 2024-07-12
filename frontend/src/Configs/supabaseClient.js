@@ -45,4 +45,27 @@ export const getVideoComments = async () => {
     return data;
 }
 
+export const getUserData = async (userId) => {
+    const { data, error } = await supabase
+        .from('usuarios')
+        .select(`
+            id,
+            nombre,
+            apellido,
+            perfil_jugadores (
+                avatar_url
+            )
+        `)
+        .eq('id', userId)
+        .single();
+    
+    if (error) {
+        console.error("Error obteniendo datos del usuario:", error);
+        return null;
+    }
+    return {
+        ...data,
+        avatar_url: data.perfil_jugadores?.avatar_url
+    };
+}
 export default supabase;

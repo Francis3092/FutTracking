@@ -18,7 +18,7 @@
     align-items: center;
     justify-content: center;
     position: absolute;
-    top: 35px;
+    top: 30px;
     left: 25px;
     cursor: pointer;
     color: white;
@@ -28,6 +28,8 @@
 .back-link {
     color: white;
     text-decoration: none;
+    margin-top: 3px;
+    text-align: center;
 }
 
 .back-link:hover {

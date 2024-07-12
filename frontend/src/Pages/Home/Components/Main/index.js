@@ -2,10 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import './index.css';
 import { FaPlay, FaPause, FaHeart, FaComment, FaEye, FaShareAlt, FaDownload, FaLink, FaChevronDown } from "react-icons/fa";
 import { FaRegEnvelope } from "react-icons/fa6";
-import supabase,{ getVideoData, getVideoLikes, getVideoComments } from '../../../../Configs/supabaseClient';
+import { getVideoData, getVideoLikes, getVideoComments } from '../../../../Configs/supabaseClient';
 
 const Main = () => {
-    const [videos, setVideos] = useState([]);
     const [isPlaying, setIsPlaying] = useState(false);
     const [showShareMenu, setShowShareMenu] = useState(false);
     const [showCommentMenu, setShowCommentMenu] = useState(false);
@@ -19,8 +18,6 @@ const Main = () => {
     const [lastClickTime, setLastClickTime] = useState(0);
     const [liked, setLiked] = useState(false);
     const [replyTo, setReplyTo] = useState(null);
-    const [liked3, setLiked3] = useState(false);
-    const [selectedVideo, setSelectedVideo] = useState(null);
 
     const videoRef = useRef();
     const shareMenuRef = useRef();
@@ -32,7 +29,11 @@ const Main = () => {
             const video = await getVideoData();
             if (video) {
                 setVideoData(video);
-                } else {
+                const videoLikes = await getVideoLikes(video.id);
+                setLikes(videoLikes);
+                const videoComments = await getVideoComments(video.id);
+                setComments(videoComments);
+            } else {
                 console.error("No se pudo obtener los datos del video.");
             }
         };
@@ -75,7 +76,7 @@ const Main = () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, [showShareMenu, showCommentMenu]);
-   
+
     const handlePlayPause = () => {
         if (videoRef.current) {
             if (isPlaying) {
@@ -107,62 +108,14 @@ const Main = () => {
         setShowShareMenu(!showShareMenu);
     };
 
-    const handleCommentClick = async (e) => {
+    const handleCommentClick = (e) => {
         e.stopPropagation();
         setShowCommentMenu(!showCommentMenu);
-        
-        try {
-            // Si necesitas obtener comentarios aquí, descomenta y ajusta según tus necesidades
-             const { data, error } = await supabase
-                 .from('comentarios')
-                 .select('id,contenido,fechacomentario,usuarioid')
-                 .eq('videoid', 1);
-                 console.log("data",data)
-    
-             if (error) {
-                 throw error;
-             }
-             let prevComments={ user: null, text:null, replies: [] };
-             console.log(prevComments)
-             for (let i=0 ; i < data.length; i++) {
-                const newComment = { user: data[i].id, text: data[i].contenido, replies: [] };
-                
-                if (newComment!==prevComments)
-                {
-                    setComments(prevComments => [...prevComments, newComment]);
-                    console.log(prevComments)
+    };
 
-                }
-                if(newComment===prevComments)
-             {
-                console.log(prevComments)
-                setComments(null);
-             }   
-            }
-          
-        
-    } catch (error) {
-        console.error('Error fetching comments:', error.message);
-    }
-};
-
-const handleLikeClick = async () => {
-        
-    const updatedLikes = liked3 ? likes - 1 : likes + 1;
-
-     const { data, error } = await supabase
-         .from('videos')
-         .update({ likes: updatedLikes })
-         .eq('id', 1);   
-        console.log(data)
-    // if (error) {
-    //     console.error("Error updating likes:", error);
-    // } else {
-        console.log(updatedLikes);
-        setLikes(updatedLikes);
-         setLiked3(!liked3);
-    // }
-};
+    const handleLikeClick = () => {
+        setLiked(!liked);
+    };
 
     const handleCloseShareMenu = () => {
         setShowShareMenu(false);
@@ -210,36 +163,17 @@ const handleLikeClick = async () => {
         setIsDragging(false);
     };
 
-    // const handlePostComment = () => {
-    //     if (newComment.trim()) {
-    //         if (replyTo !== null) {
-    //             const updatedComments = [...comments];
-    //             updatedComments[replyTo].replies.push({ user: 'Tú', text: newComment, timestamp: new Date(), likes: 0 });
-    //             setComments(updatedComments);
-    //             setReplyTo(null);
-    //         } else {
-    //             setComments([...comments, { user: 'Tú', text: newComment, replies: [], timestamp: new Date(), likes: 0 }]);
-    //         }
-    //         setNewComment("");
-    //     }
-    // };
-    const handlePostComment = async () => {
+    const handlePostComment = () => {
         if (newComment.trim()) {
-            const { data, error } = await supabase
-                .from('comentarios')
-                .insert({
-                    videoid: 1,
-                    contenido: newComment,
-                    fechacomentario: new Date().toISOString(),
-                    usuarioid: 11
-                });
-
-            if (error) {
-                console.error("Error posting comment:", error);
+            if (replyTo !== null) {
+                const updatedComments = [...comments];
+                updatedComments[replyTo].replies.push({ user: 'Tú', text: newComment, timestamp: new Date(), likes: 0 });
+                setComments(updatedComments);
+                setReplyTo(null);
             } else {
-                setComments([...comments, { user: 'Tú', text: newComment, replies: [] }]);
-                setNewComment("");
+                setComments([...comments, { user: 'Tú', text: newComment, replies: [], timestamp: new Date(), likes: 0 }]);
             }
+            setNewComment("");
         }
     };
 
@@ -321,8 +255,8 @@ const handleLikeClick = async () => {
                 </div>
                 <div className="stats">
                     <div className="stat" onClick={handleLikeClick} style={{ cursor: 'pointer' }}>
-                        <FaHeart className={`stat-icon ${liked3 ? 'liked' : ''}`} />
-                        <span>{liked3.length ? likes.length + 1 : likes.length}</span>
+                        <FaHeart className={`stat-icon ${liked ? 'liked' : ''}`} />
+                        <span>{liked ? likes.length + 1 : likes.length}</span>
                     </div>
                     <div className="stat" onClick={handleCommentClick} style={{ cursor: 'pointer' }}>
                         <FaComment className='stat-icon' />

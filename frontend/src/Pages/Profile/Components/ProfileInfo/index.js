@@ -1,38 +1,76 @@
 import React, { useEffect, useState } from "react";
-import supabase from "../../../../Configs/supabaseClient"; // Asegúrate de tener esta configuración
+import supabase from "../../../../Configs/supabaseClient";
 import "./index.css";
 
 const ProfileInfo = () => {
-    const [profile, setProfile] = useState({});
+    const [profile, setProfile] = useState(null);
+    const [followersCount, setFollowersCount] = useState(0);
 
     useEffect(() => {
         const fetchProfile = async () => {
-            const { data, error } = await supabase
-                .from('usuarios')
-                .select('*')
-                .eq('id', 11)
-                .single();
-            if (error) {
-                console.error("Error fetching profile:", error);
-            } else {
-                setProfile(data);
+            try {
+                // Consulta para obtener los datos del perfil
+                const { data: profileData, error: profileError } = await supabase
+                    .from('perfil_jugadores')
+                    .select(`
+                        id,
+                        avatar_url,
+                        edad,
+                        altura,
+                        peso,
+                        usuarios (
+                            id,
+                            nombre,
+                            apellido,
+                            rol
+                        ),
+                        naciones (
+                            nombre
+                        ),
+                        provincias (
+                            nombre
+                        )
+                    `)
+                    .eq('usuario_id', 11)
+                    .single();
+                
+                if (profileError) {
+                    throw profileError;
+                }
+                
+                setProfile(profileData);
+
+                // Consulta para contar seguidores
+                const { count: followersCount, error: followersError } = await supabase
+                    .from('seguidores')
+                    .select('*', { count: 'exact' })
+                    .eq('usuarioid', 11);
+                
+                if (followersError) {
+                    throw followersError;
+                }
+
+                setFollowersCount(followersCount);
+            } catch (error) {
+                console.error("Error fetching data:", error);
             }
         };
+
         fetchProfile();
     }, []);
 
-    if (!profile.nombre) {
+    if (!profile) {
         return <div>Loading...</div>;
     }
 
     return (
         <div className="profile-info">
-            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTjDM0PhKJ_GdWFpZd6zUh3lENRBqkScnZ4Cg&s" alt="Player Profile" className="profile-pic" />
+            <img src={profile.avatar_url} alt="Player Profile" className="profile-pic" />
             <div className="profile-details">
-                <h1 className="profile-name">{profile.nombre} {profile.apellido}</h1>
-                <p className="profile-role">{profile.rol}</p>
-                  <p className="profile-location">Buenos Aires, Argentina</p>
-                <p className="profile-followers"><span>200 followers</span></p>
+                <h1 className="profile-name">{profile.usuarios.nombre} {profile.usuarios.apellido}</h1>
+                <p className="profile-role">{profile.usuarios.rol}</p>
+                <p className="profile-location">{profile.provincias.nombre}, {profile.naciones.nombre}</p>
+                <p className="profile-followers"><span>{followersCount} followers</span></p>
             </div>
             <button className="edit-button">Editar</button>
         </div>
