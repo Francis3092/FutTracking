@@ -1,9 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FaPlay, FaPause, FaHeart, FaComment, FaEye, FaShareAlt, FaDownload, FaLink, FaArrowLeft,FaChevronDown } from "react-icons/fa";
-import supabase from "../../../../Configs/supabaseClient"; // Asegúrate de tener esta configuración
+import { FaPlay, FaPause, FaHeart, FaComment, FaEye, FaShareAlt, FaDownload, FaLink, FaArrowLeft, FaChevronDown } from "react-icons/fa";
+import supabase,{getVideoData,getVideoComments} from "../../../../Configs/supabaseClient";
 import "./index.css";
 import { FaRegEnvelope } from "react-icons/fa6";
-import { getVideoLikes, getVideoComments } from '../../../../Configs/supabaseClient';
 
 const Gallery = () => {
     const [videos, setVideos] = useState([]);
@@ -12,7 +11,7 @@ const Gallery = () => {
     const [showShareMenu, setShowShareMenu] = useState(false);
     const [showCommentMenu, setShowCommentMenu] = useState(false);
     const [videoData, setVideoData] = useState(null);
-    const [likes, setLikes] = useState([]);
+    const [likes, setLikes] = useState(0);
     const [comments, setComments] = useState([]);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
@@ -20,6 +19,7 @@ const Gallery = () => {
     const [newComment, setNewComment] = useState("");
     const [lastClickTime, setLastClickTime] = useState(0);
     const [liked, setLiked] = useState(false);
+    const [liked2, setLiked2] = useState(false);
     const [repliesVisible, setRepliesVisible] = useState({});
     const [replyTo, setReplyTo] = useState(null);
 
@@ -110,13 +110,60 @@ const Gallery = () => {
         setShowShareMenu(!showShareMenu);
     };
 
-    const handleCommentClick = (e) => {
+    const handleCommentClick = async (e) => {
         e.stopPropagation();
         setShowCommentMenu(!showCommentMenu);
-    };
+        
+        try {
+            // Si necesitas obtener comentarios aquí, descomenta y ajusta según tus necesidades
+             const { data, error } = await supabase
+                 .from('comentarios')
+                 .select('id,contenido,fechacomentario,usuarioid')
+                 .eq('videoid', selectedVideo.id);
+                 
+    
+             if (error) {
+                 throw error;
+             }
+             let prevComments={ user: null, text:null, replies: [] };
+             console.log(prevComments)
+             for (let i=0 ; i < data.length; i++) {
+                const newComment = { user: data[i].id, text: data[i].contenido, replies: [] };
+                
+                if (newComment!==prevComments)
+                {
+                    setComments(prevComments => [...prevComments, newComment]);
+                    console.log(prevComments)
 
-    const handleLikeClick = () => {
-        setLiked(!liked);
+                }
+                if(newComment===prevComments)
+             {
+                console.log(prevComments)
+                setComments(null);
+             }   
+            }
+          
+        
+    } catch (error) {
+        console.error('Error fetching comments:', error.message);
+    }
+};
+    const handleLikeClick = async () => {
+        
+        const updatedLikes = liked2 ? likes - 1 : likes + 1;
+
+         const { data, error } = await supabase
+             .from('videos')
+             .update({ likes: updatedLikes })
+             .eq('id', selectedVideo.id);   
+
+        // if (error) {
+        //     console.error("Error updating likes:", error);
+        // } else {
+            console.log(updatedLikes);
+            setLikes(updatedLikes);
+             setLiked2(!liked2 );
+        // }
     };
 
     const handleCloseShareMenu = () => {
@@ -166,7 +213,6 @@ const Gallery = () => {
     };
 
     const handlePostComment = async () => {
-        console.log(newComment)
         if (newComment.trim()) {
             const { data, error } = await supabase
                 .from('comentarios')
@@ -174,15 +220,12 @@ const Gallery = () => {
                     videoid: selectedVideo.id,
                     contenido: newComment,
                     fechacomentario: new Date().toISOString(),
-                    usuarioid:11
-                    //  selectedVideo.usuarioid
-
+                    usuarioid: 11
                 });
 
             if (error) {
                 console.error("Error posting comment:", error);
             } else {
-                setComments(data);
                 setComments([...comments, { user: 'Tú', text: newComment, replies: [] }]);
                 setNewComment("");
             }
@@ -213,8 +256,10 @@ const Gallery = () => {
         return `${Math.floor(diff / 86400)} d`;
     };
 
-    const handleVideoClick = (video) => {
+    const handleVideoClick = async (video) => {
         setSelectedVideo(video);
+        const videoData = await getVideoData(video.id);
+        setLikes(videoData.likes || 0);
     };
 
     const handleCloseVideo = () => {
@@ -284,8 +329,8 @@ const Gallery = () => {
                         </div>
                         <div className="estats">
                             <div className="estat" onClick={handleLikeClick} style={{ cursor: 'pointer' }}>
-                                <FaHeart className={`estat-icon ${liked ? 'liked' : ''}`} />
-                                <span>{liked ? likes.length + 1 : likes.length}</span>
+                                <FaHeart className={`estat-icon ${liked2 ? 'liked' : ''}`} />
+                                <span>{liked2.length ? likes.length + 1 : likes.length}</span>
                             </div>
                             <div className="estat" onClick={handleCommentClick} style={{ cursor: 'pointer' }}>
                                 <FaComment className='estat-icon' />

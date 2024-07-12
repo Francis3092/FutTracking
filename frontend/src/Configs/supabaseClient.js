@@ -19,11 +19,11 @@ export const getVideoData = async () => {
     return data;
 }
 
-export const getVideoLikes = async (videoId) => {
+export const getVideoLikes = async () => {
     const { data, error } = await supabase
-        .from('likes')
-        .select('*')
-        .eq('video_id', videoId);
+        .from('videos')
+        .select('likes')
+        .eq('id','3' );
     
     if (error) {
         console.error("Error obteniendo likes del video:", error);
@@ -32,11 +32,11 @@ export const getVideoLikes = async (videoId) => {
     return data;
 }
 
-export const getVideoComments = async (videoId) => {
+export const getVideoComments = async () => {
     const { data, error } = await supabase
         .from('comentarios')
         .select('*')
-        .eq('videoid', videoId);
+        .eq( 'videoId',3);
     
     if (error) {
         console.error("Error obteniendo comentarios del video:", error);
