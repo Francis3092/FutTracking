@@ -1,86 +1,28 @@
 import { supabase } from "../Configs/supabaseClient";
 
 export const signInWithEmail = async (email, password) => {
-    console.log("Iniciando sesión con:", email, password);
     try {
-        // Busca en tu tabla de usuarios personalizada
-        const { data: customUser, error: customError } = await supabase
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+        });
+
+        if (error) throw error;
+
+        // Fetch user data from 'usuarios' table
+        const { data: userData, error: userError } = await supabase
             .from('usuarios')
             .select('*')
-            .eq('email', email)
+            .eq('auth_id', data.user.id)
             .single();
 
-        if (customError) {
-            console.error("Error al buscar usuario:", customError);
-            return { user: null, error: "Error al iniciar sesión" };
-        }
+        if (userError) throw userError;
 
-        console.log("Usuario encontrado:", customUser);
-
-        if (customUser && customUser.contraseña === password) {
-            console.log("Contraseña correcta, intentando iniciar sesión en Supabase Auth...");
-            // Intenta iniciar sesión en Supabase Auth
-            let { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-                email: customUser.email,
-                password: password
-            });
-
-            if (signInError) {
-                console.error("Error al iniciar sesión en Supabase Auth:", signInError);
-                if (signInError.status === 400 && signInError.message === 'Invalid login credentials') {
-                    console.log("Usuario no existe en Supabase Auth, registrándolo...");
-                    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-                        email: customUser.email,
-                        password: password
-                    });
-
-                    if (signUpError) {
-                        console.error("Error al registrar usuario en Supabase Auth:", signUpError);
-                        return { user: null, error: "Error al registrar usuario" };
-                    }
-
-                    signInData = signUpData;
-                } else {
-                    console.error("Error al iniciar sesión en Supabase Auth:", signInError);
-                    return { user: null, error: "Error al iniciar sesión" };
-                }
-            }
-
-            console.log("Inicio de sesión en Supabase Auth exitoso:", signInData);
-
-            const user = signInData.user || signInData;
-
-            return { user: { ...customUser, auth_id: user.id }, error: null };
-        }
-
-        console.log("Contraseña incorrecta");
-        return { user: null, error: "Email o contraseña incorrectos" };
-    } catch (err) {
-        console.error("Error en signInWithEmail:", err);
-        return { user: null, error: "Error desconocido" };
-    }
-};
-
-
-
-export const signUpWithEmail = async (data) => {
-    const result = await supabase.auth.signUp(data);
-    return result;
-};
-
-export const updateProfile = async (data) => {
-    try {
-        await supabase.from('profiles').upsert(data, { returning: 'minimal' });
+        return { user: { ...userData, auth_id: data.user.id }, error: null };
     } catch (error) {
-        console.error(error);
+        console.error("Error in signInWithEmail:", error);
+        return { user: null, error: error.message };
     }
-};
-
-export const signInWithMagicLink = async (email) => {
-    const result = await supabase.auth.signIn({
-        email
-    });
-    return result;
 };
 
 export const signInWithGoogle = async () => {
@@ -99,37 +41,19 @@ export const signInWithGoogle = async () => {
     }
 };
 
-export const logout = async () => {
-    const result = await supabase.auth.signOut();
-    return result;
-};
+export const createOrUpdateUser = async (authUser) => {
+    const { data, error } = await supabase
+        .from('usuarios')
+        .upsert({
+            auth_id: authUser.id,
+            email: authUser.email,
+            nombre: authUser.user_metadata.full_name.split(' ')[0],
+            apellido: authUser.user_metadata.full_name.split(' ').slice(1).join(' '),
+            rol: 'Jugador'  // default role
+        }, { onConflict: 'auth_id' })
+        .select()
+        .single();
 
-export const getUserProfile = async () => {
-    try {
-        const user = supabase.auth.user();
-
-        if (user) {
-            const { id, app_metadata, user_metadata } = user;
-            if (app_metadata.provider === 'google') {
-                const { full_name } = user_metadata;
-                return { username: full_name };
-            }
-
-            const { data, error, status } = await supabase
-                .from('profiles')
-                .select('id, full_name, updated_at')
-                .eq('id', id)
-                .single();
-
-            if (error && status === 406) {
-                throw new Error('An error has occurred');
-            }
-
-            return {
-                username: data.full_name
-            };
-        }
-    } catch (error) {
-        console.log(error);
-    }
+    if (error) throw error;
+    return data;
 };
