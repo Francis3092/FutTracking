@@ -15,10 +15,14 @@ function Profile() {
         setActiveTab(tab);
     };
 
+    const handleEditClick = () => {
+        setActiveTab('MisDatos'); // Cambia la pestaña activa a MisDatos
+    };
+
     return (
         <div className="container">
             <Header />
-            <ProfileInfo />
+            <ProfileInfo onEditClick={handleEditClick} />
             <Tabs onTabChange={handleTabChange} />
             <main className="profile-main">
                 {activeTab === 'Videos' && <Gallery />}

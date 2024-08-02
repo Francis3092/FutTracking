@@ -73,8 +73,8 @@
 
 .new-tweet-button {
     position: fixed;
-    bottom: 335px;
-    right: 830px;
+    bottom: 100px;
+    right: 740px;
     background-color: #1da1f2;
     color: white;
     border: none;

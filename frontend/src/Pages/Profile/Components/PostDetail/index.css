@@ -28,8 +28,8 @@
 
 .back-button {
     position: absolute;
-    top: 27px;
-    left: 41%;
+    top: 25px;
+    left: 40%;
     font-size: 20px;
     background: transparent;
     border: none;
@@ -62,11 +62,12 @@
 
 .post-info, .comment-info {
     flex-grow: 1;
+    
 }
 
 .post-content, .comment-content {
     margin-bottom: 15px;
-    font-size: 1.1rem;
+    font-size: 1rem;
 }
 
 .comment-footer {

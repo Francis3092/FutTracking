@@ -1,10 +1,13 @@
+// ProfileInfo.js
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import supabase from "../../../../Configs/supabaseClient";
 import "./index.css";
 
-const ProfileInfo = () => {
+const ProfileInfo = ({ onEditClick }) => {
     const [profile, setProfile] = useState(null);
     const [followersCount, setFollowersCount] = useState(0);
+    const navigate = useNavigate(); // Hook para navegación
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -59,8 +62,6 @@ const ProfileInfo = () => {
         fetchProfile();
     }, []);
 
-    
-
     if (!profile) {
         return <div>Loading...</div>;
     }
@@ -74,7 +75,12 @@ const ProfileInfo = () => {
                 <p className="profile-location">{profile.provincias.nombre}, {profile.naciones.nombre}</p>
                 <p className="profile-followers"><span>{followersCount} followers</span></p>
             </div>
-            <button className="edit-button">Editar</button>
+            <button 
+                className="edit-button"
+                onClick={() => onEditClick()} // Llama a la función proporcionada como prop
+            >
+                Editar
+            </button>
         </div>
     );
 }

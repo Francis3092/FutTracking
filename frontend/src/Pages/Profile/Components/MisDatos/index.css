@@ -14,12 +14,17 @@ h2 {
 
 .edit-icon {
     margin-left: 10px;
+    font-size: 18px;
     cursor: pointer;
     color: #007bff;
 }
 
 .datos-list p {
     margin-bottom: 10px;
+}
+
+.edit-form div{
+    margin-bottom: 15px;
 }
 
 .edit-form label {
