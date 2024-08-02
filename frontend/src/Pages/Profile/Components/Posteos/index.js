@@ -155,7 +155,7 @@ const Posteos = () => {
                         </button>
                     </div>
                     <p className="post-content">{post.contenido}</p>
-                    <div className="post-footer">
+                    <div className="post-footerA">
                         <button
                             onClick={(event) => handleLike(event, post.id, post.likes)}
                             className={`ytr-button ${likedPosts[post.id] ? 'liked' : ''}`}

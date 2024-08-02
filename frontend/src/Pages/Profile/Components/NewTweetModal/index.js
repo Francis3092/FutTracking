@@ -57,8 +57,8 @@ const NewTweetModal = ({ isOpen, onClose, onTweetCreated }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content">
+    <div className="modal-overlayt">
+      <div className="modal-contentt">
         <h2>New Tweet</h2>
         <form onSubmit={handleSubmit}>
           <textarea
@@ -67,7 +67,7 @@ const NewTweetModal = ({ isOpen, onClose, onTweetCreated }) => {
             placeholder="What's happening?"
             maxLength={280}
           />
-          <div className="modal-actions">
+          <div className="modal-actionst">
             <button type="button" onClick={onClose}>Cancel</button>
             <button type="submit">Tweet</button>
           </div>

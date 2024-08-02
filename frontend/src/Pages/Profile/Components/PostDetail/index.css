@@ -1,24 +1,24 @@
 .post-detail-overlay {
     position: fixed;
-    top: 0;
+    top: 0; /* Ajusta este valor según sea necesario para mover más arriba o abajo */
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.7);
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start; /* Cambiado de center a flex-start */
     z-index: 1000;
 }
 
 .post-detail-content {
     background-color: white;
-    border-radius: 8px;
     padding: 20px;
     width: 90%;
     max-width: 450px;
-    max-height: 80vh;
+    min-height: 98vh;
+    overflow-y: auto; /* Para permitir el desplazamiento si el contenido es demasiado alto */
 }
+
 
 .post-detail-header {
     display: flex;
@@ -28,12 +28,17 @@
 
 .back-button {
     position: absolute;
-    top: 20px;
-    left: 20px;
+    top: 27px;
+    left: 41%;
+    font-size: 20px;
     background: transparent;
     border: none;
-    color: white;
+    color: rgb(0, 0, 0);
     cursor: pointer;
+}
+
+.post-detail-title{
+    margin-left: 60px;
 }
 
 .original-post {
@@ -64,9 +69,15 @@
     font-size: 1.1rem;
 }
 
-.post-footer, .comment-footer {
+.comment-footer {
     display: flex;
     justify-content: space-between;
+}
+
+.post-footer{
+    display: flex;
+    align-items: center;
+    gap: 1rem;
 }
 
 .action-button {
@@ -76,6 +87,7 @@
     display: flex;
     align-items: center;
     color: #657786;
+    font-size: 14px;
 }
 
 .boton-like{
@@ -123,6 +135,10 @@
     transition: color 0.2s;
 }
 
+.comment-likes.liked {
+    color: #e0245e;
+}
+
 .comment-likes svg {
     margin-right: 5px;
 }
@@ -131,6 +147,7 @@
     display: flex;
     align-items: center;
     color: #657786;
-    margin-left: 1rem;
-    font-size: 16px;
+    margin-left: .25rem;
+    font-size: 14px;
+    gap: .25rem;
 }

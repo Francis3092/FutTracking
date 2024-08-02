@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
 const Header = () => {
     return (
         <header className="profile-header">
-          <button className="back-button">
+          <button className="back-buttont">
             <Link to="/home" className="back-link"><FaChevronLeft /></Link>
           </button>
           <img src={logo} alt="Logo" className="logo" />

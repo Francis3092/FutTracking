@@ -46,7 +46,7 @@
     line-height: 1.4;
 }
 
-.post-footer {
+.post-footerA {
     display: flex;
     align-items: center;
 }
@@ -73,8 +73,8 @@
 
 .new-tweet-button {
     position: fixed;
-    bottom: 20px;
-    right: 20px;
+    bottom: 335px;
+    right: 830px;
     background-color: #1da1f2;
     color: white;
     border: none;
@@ -87,6 +87,7 @@
     align-items: center;
     justify-content: center;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
   }
   
   .delete-button {

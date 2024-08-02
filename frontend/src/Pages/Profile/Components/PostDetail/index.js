@@ -163,7 +163,7 @@ const PostDetail = ({ post, onClose, onDelete, onLike, likedPosts, fetchPosts })
                     <button onClick={onClose} className="back-button">
                         <FaArrowLeft />
                     </button>
-                    <h2>Post</h2>
+                    <h2 className="post-detail-title">Post</h2>
                 </div>
                 <div className="original-post">
                     <div className="post-header">

@@ -59,6 +59,8 @@ const ProfileInfo = () => {
         fetchProfile();
     }, []);
 
+    
+
     if (!profile) {
         return <div>Loading...</div>;
     }
