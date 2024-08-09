@@ -5,13 +5,15 @@ const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 
 export const supabase = createClient(supabaseUrl, supabaseKey)
 
-export const getVideoData = async () => {
+export const getVideoData = async (videoId) => {
+
     const { data, error } = await supabase
+   
         .from('videos')
         .select('*')
-        .eq('id', 1) // Assuming you want to get data for video with ID 1
+        .eq('id', videoId) // Assuming you want to get data for video with ID 1
         .single();
-    
+   
     if (error) {
         console.error("Error obteniendo datos del video:", error);
         return null;
@@ -19,27 +21,43 @@ export const getVideoData = async () => {
     return data;
 }
 
-export const getVideoLikes = async () => {
+export const getVideoLikes = async (videoId) => {
     const { data, error } = await supabase
+       
         .from('videos')
         .select('likes')
-        .eq('id','3' );
-    
-    if (error) {
-        console.error("Error obteniendo likes del video:", error);
-        return [];
-    }
-    return data;
+        .eq('id',videoId );
+        if (error) {
+            console.error("Error obteniendo likes del video:", error);
+            return [];
+        }
+        return data;
 }
-
-export const getVideoComments = async () => {
+export const getComentarioLikes = async (videoId) => {
+    const { data, error } = await supabase
+       
+        .from('comentarios')
+        .select('likes')
+        .eq('videoid',videoId );
+        console.log("Prueba",videoId)
+        if (error) {
+            console.error("Error obteniendo likes del video:", error);
+            return [];
+        }
+        console.log("prueba select likes",data)
+        return data;
+       
+}
+export const getVideoComments = async (videoId) => {
     const { data, error } = await supabase
         .from('comentarios')
         .select('*')
-        .eq( 'videoId',3);
-    
+        .eq('videoid', videoId)
+        .is('parent_id', null); // Comentarios principales
+
     if (error) {
         console.error("Error obteniendo comentarios del video:", error);
+        console.log("El id es", videoId);
         return [];
     }
     return data;
@@ -58,7 +76,7 @@ export const getUserData = async (userId) => {
         `)
         .eq('id', userId)
         .single();
-    
+   
     if (error) {
         console.error("Error obteniendo datos del usuario:", error);
         return null;
@@ -67,5 +85,18 @@ export const getUserData = async (userId) => {
         ...data,
         avatar_url: data.perfil_jugadores?.avatar_url
     };
+}
+export const fetchCommentReplies = async (Id) => {
+    const { data, error } = await supabase
+        .from('comentarios')
+        .select('*')
+        .eq( 'parent_id',Id)
+   
+    if (error) {
+        console.error("Error obteniendo comentarios del video:", error);
+        console.log("el id es",Id)
+        return [];
+    }
+    return data;
 }
 export default supabase;
