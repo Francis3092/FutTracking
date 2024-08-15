@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
 import {
   FaPlay,
   FaPause,
@@ -11,14 +12,9 @@ import {
   FaChevronDown,
 } from "react-icons/fa";
 import { FaRegEnvelope } from "react-icons/fa6";
-import supabase, {
-  getVideoData,
-  getVideoLikes,
-  getVideoComments,
-  getComentarioLikes,
-} from "../../../../Configs/supabaseClient";
 import "./index.css";
 
+const API_BASE_URL = 'http://localhost:5000/api';
 
 const Main = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -27,7 +23,7 @@ const Main = () => {
   const [videoData, setVideoData] = useState(null);
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [selectedComment, setSelectedComment] = useState(null);
-  const [likes, setLikes] = useState([]);
+  const [likes, setLikes] = useState(0);
   const [comments, setComments] = useState([]);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -35,88 +31,33 @@ const Main = () => {
   const [newComment, setNewComment] = useState("");
   const [lastClickTime, setLastClickTime] = useState(0);
   const [liked, setLiked] = useState(false);
-  const [liked3, setLiked3] = useState(false);
-  const [liked2, setLiked2] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
   const videoRef = useRef();
   const shareMenuRef = useRef();
   const commentMenuRef = useRef();
   const [likedComments, setLikedComments] = useState({});
   const progressBarRef = useRef();
-
+  const [commentsCount, setCommentsCount] = useState(0);
 
   useEffect(() => {
-    const getRandomVideoId = () => {
-      return Math.floor(Math.random() * 5) + 1;
-    };
+    const getRandomVideoId = () => Math.floor(Math.random() * 5) + 1;
     const fetchVideoData = async () => {
       const videoId = getRandomVideoId();
-      console.log("Generated videoId:", videoId);
       try {
-        const video = await getVideoData(videoId);
-        if (!video) {
-          console.error(
-            "No se pudo obtener los datos del video para videoId:",
-            videoId
-          );
-          return;
-        }
-
-
-        console.log("Video data:", video);
-        setVideoData(video);
-
-
-        const videoLikes = await getVideoLikes(videoId);
-        console.log("videoLikes:", videoLikes);
-
-
-        if (typeof videoLikes === "number") {
-          setLikes(videoLikes);
-        } else if (videoLikes && typeof videoLikes.likes === "number") {
-          setLikes(videoLikes.likes);
-        } else {
-          setLikes(0); // Valor por defecto si no es un número
-        }
-        const ComentarioLikes = await getComentarioLikes(videoId);
-        console.log("ComentarioLikes:", ComentarioLikes);
-
-
-        if (typeof ComentarioLikes === "number") {
-          setLikes(ComentarioLikes);
-        } else if (
-          ComentarioLikes &&
-          typeof ComentarioLikes.likes === "number"
-        ) {
-          setLikes(ComentarioLikes.likes);
-        } else {
-          setLikes(0); // Valor por defecto si no es un número
-        }
-
-
-        const comentarios = await getVideoComments(videoId);
-        console.log("videoComments:", comentarios);
-
-
-        if (Array.isArray(comentarios)) {
-          setComments(comentarios);
-        } else {
-          setComments([]); // Valor por defecto si no es un array
-        }
-
-
-        setSelectedVideo(video);
-        console.log("Selected video:", video);
-        setLikes(typeof video.likes === "number" ? video.likes : 0);
+        const videoResponse = await axios.get(`${API_BASE_URL}/videos/${videoId}`);
+        console.log("Video data:", videoResponse.data);
+  
+        setVideoData(videoResponse.data);
+        setSelectedVideo(videoResponse.data);
+        setLikes(videoResponse.data.likes);
+        setLiked(videoResponse.data.liked);
       } catch (error) {
-        console.error("Error al obtener datos del video:", error);
+        console.error("Error al obtener datos del video:", error.response?.data || error.message);
       }
     };
-
-
+  
     fetchVideoData();
   }, []);
-
 
   useEffect(() => {
     if (videoData && videoRef.current) {
@@ -131,117 +72,194 @@ const Main = () => {
       };
       playVideo();
     }
-    fetchComments();
   }, [videoData]);
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (shareMenuRef.current && !shareMenuRef.current.contains(event.target)) {
+        setShowShareMenu(false);
+      }
+      if (commentMenuRef.current && !commentMenuRef.current.contains(event.target)) {
+        setShowCommentMenu(false);
+      }
+    };
 
-  const fetchComments = async () => {
-    if (!videoData) return;
-    try {
-      const { data, error } = await supabase
-        .from('comentarios')
-        .select(`
-          *,
-          usuarios (
-            id,
-            nombre,
-            apellido,
-            perfil_jugadores (
-              avatar_url
-            )
-          )
-        `)
-        .eq('videoid', videoData.id)
-        .order('fechacomentario', { ascending: false });
- 
-      if (error) throw error;
-      setComments(data);
-    } catch (error) {
-      console.error("Error fetching comments:", error);
+    if (showShareMenu || showCommentMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showShareMenu, showCommentMenu]);
+
+  const handlePlayPause = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play().catch((e) => console.error("Error al reproducir:", e));
+      }
+      setIsPlaying(!isPlaying);
     }
   };
 
-
-  const handleCommentClick = () => {
-    setShowCommentMenu(true);
-    fetchComments(); // Carga los comentarios cuando se abre el menú
+  const handleScreenClick = (e) => {
+    const currentTime = new Date().getTime();
+    if (currentTime - lastClickTime < 300) {
+      handleDoubleClick(e);
+    } else {
+      handlePlayPause();
+    }
+    setLastClickTime(currentTime);
   };
+
+  const handleDoubleClick = (e) => {
+    const newTime = videoRef.current.currentTime + 10;
+    videoRef.current.currentTime = newTime < videoRef.current.duration ? newTime : videoRef.current.duration;
+  };
+
+  const handleShareClick = (e) => {
+    e.stopPropagation();
+    setShowShareMenu(!showShareMenu);
+  };
+
+  const handleLikeClick = async () => {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/videos/${selectedVideo.id}/like`);
+      setLikes(response.data.likes); // Actualiza el número de likes en el estado
+      setLiked(response.data.liked); // Actualiza el estado de si el video está likeado o no
+    } catch (error) {
+      console.error('Error updating video likes:', error);
+    }
+  };
+  
+
+  useEffect(() => {
+    if (selectedVideo && Array.isArray(selectedVideo.likes)) {
+        setLikes(selectedVideo.likes.length);
+        setLiked(selectedVideo.likes.includes(11)); 
+    } else {
+        setLikes(0);
+        setLiked(false); // O el valor por defecto que prefieras
+    }
+  }, [selectedVideo]);
+  
+  
+
+
+  const handleCloseShareMenu = () => {
+    setShowShareMenu(false);
+  };
+
+  const handleCloseCommentMenu = () => {
+    setShowCommentMenu(false);
+  };
+
+  const handleDownload = () => {
+    if (videoData && videoData.url) {
+      const link = document.createElement("a");
+      link.href = videoData.url;
+      link.setAttribute("download", "video.mp4");
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    setCurrentTime(videoRef.current.currentTime);
+    setDuration(videoRef.current.duration);
+  };
+
+  const handleProgressClick = (e) => {
+    const newTime = (e.nativeEvent.offsetX / progressBarRef.current.offsetWidth) * duration;
+    videoRef.current.currentTime = newTime;
+    setCurrentTime(newTime);
+  };
+
+  const handleMouseDown = (e) => {
+    setIsDragging(true);
+    handleProgressClick(e);
+  };
+
+  const handleMouseMove = (e) => {
+    if (isDragging) {
+      handleProgressClick(e);
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleReplyClick = (commentId) => {
+    setReplyTo(commentId);
+  };
+
+  useEffect(() => {
+    const fetchCommentsCount = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/comments/count/${selectedVideo.id}`);
+        setCommentsCount(response.data.count);
+      } catch (error) {
+        console.error("Error fetching comments count:", error);
+      }
+    };
+  
+    if (selectedVideo) {
+      fetchCommentsCount();
+    }
+  }, [selectedVideo]);
+
+  const handleCommentClick = async () => {
+    setShowCommentMenu(true);
+    try {
+        const response = await axios.get(`${API_BASE_URL}/comments/${selectedVideo.id}`);
+        console.log("Comentarios obtenidos:", response.data); // <-- Añadir este log
+        setComments(response.data);
+    } catch (error) {
+        console.error("Error fetching comments:", error);
+    }
+};
 
 
   const handleCommentLike = async (commentId) => {
     try {
-      const commentToUpdate = comments.find(c => c.id === commentId);
-      const newLikes = likedComments[commentId] ? commentToUpdate.likes - 1 : commentToUpdate.likes + 1;
-
-
-      const { data, error } = await supabase
-        .from('comentarios')
-        .update({ likes: newLikes })
-        .eq('id', commentId)
-        .select();
-
-
-      if (error) throw error;
-
-
-      setComments(comments.map(c => c.id === commentId ? { ...c, likes: data[0].likes } : c));
+      const response = await axios.post(`${API_BASE_URL}/comments/${commentId}/like`);
+      setComments(comments.map(c => c.id === commentId ? { ...c, likes: response.data.likes } : c));
       setLikedComments({ ...likedComments, [commentId]: !likedComments[commentId] });
     } catch (error) {
       console.error("Error updating comment likes:", error);
     }
   };
 
-
   const handleSubmitComment = async () => {
     if (!newComment.trim()) return;
- 
     try {
-      const userId = 11; // Asume que tienes acceso al ID del usuario actual
-      const { data: userData } = await supabase
-        .from('usuarios')
-        .select(`
-          id,
-          nombre,
-          apellido,
-          perfil_jugadores (
-            avatar_url
-          )
-        `)
-        .eq('id', userId)
-        .single();
- 
-      const { data, error } = await supabase
-        .from('comentarios')
-        .insert({
-          videoid: videoData.id,
-          contenido: newComment,
-          usuarioid: userId,
-          parent_id: replyTo
-        })
-        .select()
-        .single();
- 
-      if (error) throw error;
- 
-      const newCommentWithUserData = {
-        ...data,
-        usuarios: userData
-      };
- 
-      setComments([newCommentWithUserData, ...comments]);
+      const response = await axios.post(`${API_BASE_URL}/comments`, {
+        videoId: selectedVideo.id,
+        userId: 11, // Asume que tienes acceso al ID del usuario actual
+        content: newComment,
+        parentId: replyTo
+      });
+      setComments([response.data, ...comments]);
       setNewComment("");
       setReplyTo(null);
+      setCommentsCount(prev => prev + 1);
     } catch (error) {
       console.error("Error submitting comment:", error);
     }
   };
 
-
-  const renderComments = (parentId = null) => {
+  const renderComments = (parentId = null, level = 0) => {
     return comments
       .filter(comment => comment.parent_id === parentId)
       .map(comment => (
-        <div key={comment.id} className="comment">
+        <div key={comment.id} className={`comment level-${level}`}>
           <div className="comment-user-info">
             <img
               src={comment.usuarios?.perfil_jugadores?.[0]?.avatar_url || "default-avatar.png"}
@@ -257,7 +275,7 @@ const Main = () => {
           </div>
           <p className="comment-text">{comment.contenido}</p>
           <div className="comment-stats">
-            <button className="reply-button" onClick={() => setReplyTo(comment.id)}>
+            <button className="reply-button" onClick={() => handleReplyClick(comment.id)}>
               Responder
             </button>
             <div className="comment-like-icon" onClick={() => handleCommentLike(comment.id)}>
@@ -265,157 +283,10 @@ const Main = () => {
               <span>{comment.likes}</span>
             </div>
           </div>
-          {renderComments(comment.id)}
+          {renderComments(comment.id, level + 1)}
         </div>
       ));
   };
-
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        shareMenuRef.current &&
-        !shareMenuRef.current.contains(event.target)
-      ) {
-        setShowShareMenu(false);
-      }
-      if (
-        commentMenuRef.current &&
-        !commentMenuRef.current.contains(event.target)
-      ) {
-        setShowCommentMenu(false);
-      }
-    };
-
-
-    if (showShareMenu || showCommentMenu) {
-      document.addEventListener("mousedown", handleClickOutside);
-    } else {
-      document.removeEventListener("mousedown", handleClickOutside);
-    }
-
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [showShareMenu, showCommentMenu]);
-
-
-  const handlePlayPause = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current
-          .play()
-          .catch((e) => console.error("Error al reproducir:", e));
-      }
-      setIsPlaying(!isPlaying);
-    }
-  };
-
-
-  const handleScreenClick = (e) => {
-    const currentTime = new Date().getTime();
-    if (currentTime - lastClickTime < 300) {
-      handleDoubleClick(e);
-    } else {
-      handlePlayPause();
-    }
-    setLastClickTime(currentTime);
-  };
-
-
-  const handleDoubleClick = (e) => {
-    const newTime = videoRef.current.currentTime + 10;
-    videoRef.current.currentTime =
-      newTime < videoRef.current.duration ? newTime : videoRef.current.duration;
-  };
-
-
-  const handleShareClick = (e) => {
-    e.stopPropagation();
-    setShowShareMenu(!showShareMenu);
-  };
-
-
-  const handleLikeClick = async () => {
-    const updatedLikes = liked3 ? likes - 1 : likes + 1;
-
-
-    const { data, error } = await supabase
-      .from("videos")
-      .update({ likes: updatedLikes })
-      .eq("id", selectedVideo.id);
-
-
-    setLikes(updatedLikes);
-    setLiked3(!liked3);
-  };
-
-
-  const handleCloseShareMenu = () => {
-    setShowShareMenu(false);
-  };
-
-
-  const handleCloseCommentMenu = () => {
-    setShowCommentMenu(false);
-  };
-
-
-  const handleDownload = () => {
-    if (videoData && videoData.url) {
-      const link = document.createElement("a");
-      link.href = videoData.url;
-      link.setAttribute("download", "video.mp4");
-      link.style.display = "none";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-  };
-
-
-  const handleTimeUpdate = () => {
-    setCurrentTime(videoRef.current.currentTime);
-    setDuration(videoRef.current.duration);
-  };
-
-
-  const handleProgressClick = (e) => {
-    const newTime =
-      (e.nativeEvent.offsetX / progressBarRef.current.offsetWidth) * duration;
-    videoRef.current.currentTime = newTime;
-    setCurrentTime(newTime);
-  };
-
-
-  const handleMouseDown = (e) => {
-    setIsDragging(true);
-    handleProgressClick(e);
-  };
-
-
-  const handleMouseMove = (e) => {
-    if (isDragging) {
-      handleProgressClick(e);
-    }
-  };
-
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-
-  const handleReplyClick = (commentId) => {
-    setReplyTo(commentId);
-    console.log("replyTo:", replyTo);
-  };
-
-
-
 
   const formatTime = (time) => {
     const minutes = Math.floor(time / 60);
@@ -423,27 +294,21 @@ const Main = () => {
     return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
   };
 
-
-
-
-
-
   return (
     <div className="image-container">
-      <video
+      {videoData && videoData.url ? (
+        <video
         ref={videoRef}
-        src={videoData ? videoData.url : ""}
+        src={videoData.url}
         className="player-img"
-        playsInline
-        loop
         onClick={handleScreenClick}
         onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={() =>
-          videoRef.current
-            .play()
-            .catch((e) => console.error("Error al cargar metadata:", e))
-        }
-      />
+        controls={false}
+        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+      />      
+      ) : (
+        <p>Cargando video...</p>
+      )}
       <div className="player-info">
         <div className="controls-wrapper">
           <button className="pause-button" onClick={handlePlayPause}>
@@ -484,8 +349,8 @@ const Main = () => {
             onClick={handleLikeClick}
             style={{ cursor: "pointer" }}
           >
-            <FaHeart className={`stat-icon ${liked3 ? "liked" : ""}`} />
-            <span>{liked3 ? likes : likes}</span>
+            <FaHeart className={`stat-icon ${liked ? "liked" : ""}`} />
+            <span>{likes}</span>
           </div>
           <div
             className="stat"
@@ -493,7 +358,7 @@ const Main = () => {
             style={{ cursor: "pointer" }}
           >
             <FaComment className="stat-icon" />
-            <span>{comments.length}</span>
+            <span>{commentsCount}</span>
           </div>
           <div className="stat">
             <FaEye className="stat-icon" />

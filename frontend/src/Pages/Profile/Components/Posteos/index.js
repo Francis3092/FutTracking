@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import supabase from "../../../../Configs/supabaseClient";
 import { FaHeart, FaComment, FaPlus, FaTrash } from "react-icons/fa";
 import NewTweetModal from "../NewTweetModal";
 import PostDetail from "../PostDetail";
@@ -21,26 +20,11 @@ const Posteos = () => {
 
     const fetchPosts = async () => {
         try {
-            const { data, error } = await supabase
-                .from('posteos')
-                .select(`
-                    *,
-                    usuarios (
-                        id,
-                        nombre,
-                        apellido,
-                        perfil_jugadores (
-                            avatar_url
-                        )
-                    ),
-                    respuestas_posteos (count)
-                `)
-                .order('fechapublicacion', { ascending: false });
-
-            if (error) throw error;
+            const response = await fetch('http://localhost:5000/api/posts');
+            const data = await response.json();
             setPosts(data);
         } catch (error) {
-            console.error("Error fetching posts:", error);
+            console.error('Error fetching posts:', error);
         }
     };
 
@@ -61,22 +45,24 @@ const Posteos = () => {
             const isLiked = likedPosts[postId];
             const newLikeCount = isLiked ? currentLikes - 1 : currentLikes + 1;
 
-            const { data, error } = await supabase
-                .from('posteos')
-                .update({ likes: newLikeCount })
-                .eq('id', postId)
-                .select();
-
-            if (error) throw error;
+            const response = await fetch(`http://localhost:5000/api/posts/${postId}/like`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ likes: newLikeCount })
+            })
+            const data = await response.json();
 
             setPosts(posts.map(post =>
-                post.id === postId ? { ...post, likes: data[0].likes } : post
+                post.id === postId ? { ...post, likes: data.likes } : post
             ));
 
             const newLikedPosts = {
                 ...likedPosts,
                 [postId]: !isLiked
-            };
+            }
+
             setLikedPosts(newLikedPosts);
             saveLikedPosts(newLikedPosts);
         } catch (error) {
@@ -88,13 +74,9 @@ const Posteos = () => {
         event.stopPropagation();
         if (window.confirm("Are you sure you want to delete this tweet?")) {
             try {
-                const { error } = await supabase
-                    .from('posteos')
-                    .delete()
-                    .eq('id', postId);
-
-                if (error) throw error;
-
+                await fetch(`http://localhost:5000/api/posts/${postId}`, {
+                    method: 'DELETE'
+                })
                 setPosts(posts.filter(post => post.id !== postId));
                 setSelectedPost(null);
             } catch (error) {

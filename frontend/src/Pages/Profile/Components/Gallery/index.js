@@ -45,14 +45,15 @@ const Gallery = () => {
 
   useEffect(() => {
     const fetchVideos = async () => {
-      const { data, error } = await supabase
-        .from("videos")
-        .select("*")
-        .eq("usuarioid", 11);
-      if (error) {
-        console.error("Error fetching videos:", error);
-      } else {
+      try {
+        const response = await fetch('http://localhost:5000/api/userProfile/videos');
+        if (!response.ok) {
+          console.log("Error fetching videos:", response.statusText);
+        }
+        const data = await response.json();
         setVideos(data);
+      } catch (error) {
+        console.error("Error fetching videos:", error);
       }
     };
     fetchVideos();
@@ -259,17 +260,17 @@ const Gallery = () => {
 
   const handlePostComment = () => {
     if (newComment.trim()) {
-        if (replyTo !== null) {
-            const updatedComments = [...comments];
-            updatedComments[replyTo].replies.push({ user: 'Tú', text: newComment, timestamp: new Date(), likes: 0 });
-            setComments(updatedComments);
-            setReplyTo(null);
-        } else {
-            setComments([...comments, { user: 'Tú', text: newComment, replies: [], timestamp: new Date(), likes: 0 }]);
-        }
-        setNewComment("");
+      if (replyTo !== null) {
+        const updatedComments = [...comments];
+        updatedComments[replyTo].replies.push({ user: 'Tú', text: newComment, timestamp: new Date(), likes: 0 });
+        setComments(updatedComments);
+        setReplyTo(null);
+      } else {
+        setComments([...comments, { user: 'Tú', text: newComment, replies: [], timestamp: new Date(), likes: 0 }]);
+      }
+      setNewComment("");
     }
-};
+  };
 
   const handleReplyClick = (index) => {
     const replyText = prompt("Escribí tu respuesta:");
@@ -284,7 +285,7 @@ const Gallery = () => {
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-};
+  };
 
   const formatTimestamp = (timestamp) => {
     const now = new Date();
@@ -293,7 +294,7 @@ const Gallery = () => {
     if (diff < 3600) return `${Math.floor(diff / 60)} min`;
     if (diff < 86400) return `${Math.floor(diff / 3600)} h`;
     return `${Math.floor(diff / 86400)} d`;
-};
+  };
 
   const handleVideoClick = async (video) => {
     setSelectedVideo(video);
@@ -308,16 +309,16 @@ const Gallery = () => {
   const handleCommentLike = (commentIndex, replyIndex) => {
     const updatedComments = [...comments];
     if (replyIndex !== undefined) {
-        const reply = updatedComments[commentIndex].replies[replyIndex];
-        reply.liked = !reply.liked;
-        reply.likes += reply.liked ? 1 : -1;
+      const reply = updatedComments[commentIndex].replies[replyIndex];
+      reply.liked = !reply.liked;
+      reply.likes += reply.liked ? 1 : -1;
     } else {
-        const comment = updatedComments[commentIndex];
-        comment.liked = !comment.liked;
-        comment.likes += comment.liked ? 1 : -1;
+      const comment = updatedComments[commentIndex];
+      comment.liked = !comment.liked;
+      comment.likes += comment.liked ? 1 : -1;
     }
     setComments(updatedComments);
-};
+  };
 
   const toggleReplies = (index) => {
     setRepliesVisible((prev) => ({ ...prev, [index]: !prev[index] }));

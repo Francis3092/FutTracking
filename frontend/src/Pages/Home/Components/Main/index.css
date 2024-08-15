@@ -1,9 +1,14 @@
 .image-container {
     position: relative;
     overflow: hidden;
+    width: 100%;
     max-width: 450px;
+    height: 85vh; /* Ajusta esto según tus necesidades */
     margin: 0 auto;
     background-color: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .player-img {
@@ -291,7 +296,6 @@
 
 .comment {
     margin-bottom: 10px;
-    background: rgba(255, 255, 255, 0.1);
     padding: 10px;
     border-radius: 10px;
 }
@@ -339,7 +343,7 @@
 
 .reply-button {
     background-color: transparent;
-    color: #fff;
+    color: #ffffff;
     border: none;
     cursor: pointer;
     font-size: 0.8rem;
@@ -400,3 +404,21 @@
     background-color: #fff;
     color: #000;
 }
+
+.comment {
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 10px;
+  }
+  
+  .comment.level-0 {
+    margin-left: 0;
+  }
+  
+  .comment.level-1 {
+    margin-left: 20px;
+  }
+  
+  .comment.level-2 {
+    margin-left: 40px;
+  }

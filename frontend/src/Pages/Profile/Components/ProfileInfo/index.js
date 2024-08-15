@@ -1,7 +1,5 @@
-// ProfileInfo.js
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import supabase from "../../../../Configs/supabaseClient";
 import "./index.css";
 
 const ProfileInfo = ({ onEditClick }) => {
@@ -12,48 +10,15 @@ const ProfileInfo = ({ onEditClick }) => {
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                // Consulta para obtener los datos del perfil
-                const { data: profileData, error: profileError } = await supabase
-                    .from('perfil_jugadores')
-                    .select(`
-                        id,
-                        avatar_url,
-                        edad,
-                        altura,
-                        peso,
-                        usuarios (
-                            id,
-                            nombre,
-                            apellido,
-                            rol
-                        ),
-                        naciones (
-                            nombre
-                        ),
-                        provincias (
-                            nombre
-                        )
-                    `)
-                    .eq('usuario_id', 11)
-                    .single();
-                
-                if (profileError) {
-                    throw profileError;
-                }
-                
-                setProfile(profileData);
+                const response = await fetch('http://localhost:5000/api/profile/profile'); // Asegúrate de que esta URL coincida con tu configuración
+                const data = await response.json();
 
-                // Consulta para contar seguidores
-                const { count: followersCount, error: followersError } = await supabase
-                    .from('seguidores')
-                    .select('*', { count: 'exact' })
-                    .eq('usuarioid', 11);
-                
-                if (followersError) {
-                    throw followersError;
+                if (response.ok) {
+                    setProfile(data.profile);
+                    setFollowersCount(data.followersCount);
+                } else {
+                    console.error("Error fetching data:", data.error);
                 }
-
-                setFollowersCount(followersCount);
             } catch (error) {
                 console.error("Error fetching data:", error);
             }
